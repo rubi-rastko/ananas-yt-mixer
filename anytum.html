@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>YouTube Cue Mixer – Fully Working</title>
+<title>Desync Deck</title>
 <style>
 body{
   background:#121212;
@@ -17,6 +17,22 @@ body{
 
 input{
   margin:4px;
+}
+
+button{
+  margin:3px;
+  cursor:pointer;
+}
+
+/* Top main buttons bigger */
+#inputs button{
+  font-size:16px;
+  padding:8px 12px;
+  background:#0f8;
+  color:#000;
+  border:none;
+  border-radius:4px;
+  font-weight:bold;
 }
 
 #mixer{
@@ -35,11 +51,6 @@ input{
 
 .player{
   margin-bottom:6px;
-}
-
-button{
-  margin:3px;
-  cursor:pointer;
 }
 
 .cueRow{
@@ -102,11 +113,30 @@ button{
   border-radius: 3px;
   transition: width 0.1s linear;
 }
+
+/* Combined Play/Pause button styling */
+.toggleBtn{
+  font-size:14px;
+  padding:4px 8px;
+  background:#08f;
+  color:#fff;
+  border:none;
+  border-radius:3px;
+  margin-right:4px;
+}
+.anachronismBtn{
+  font-size:14px;
+  padding:4px 8px;
+  background:#f80;
+  color:#fff;
+  border:none;
+  border-radius:3px;
+}
 </style>
 </head>
 
 <body>
-<h2>YouTube Cue Mixer 🎛️</h2>
+<h2>Desync Deck 🎛️</h2>
 
 <div id="inputs">
   <input id="url1" placeholder="Video 1 URL or ID">
@@ -174,9 +204,8 @@ function createChannel(i){
       <div class="cueRow">${cueRowSet}</div>
     </div>
     <div>
-      <button onclick="playVideo(${i})">▶</button>
-      <button onclick="pauseVideo(${i})">⏸</button>
-      <button title="Jump to a random point in the video" onclick="randomSeek(${i})">🎲 Chaos</button>
+      <button class="toggleBtn" onclick="togglePlayPause(${i}, this)">▶ / ⏸</button>
+      <button class="anachronismBtn" title="Jump to a random point in the video" onclick="randomSeek(${i})">Anachronism</button>
     </div>
     ${sliderHTML}
   `
@@ -205,7 +234,6 @@ function loadVideos(){
       playerVars:{playsinline:1,controls:1},
       events:{
         onReady: function(event){
-          // start progress loop only once when the first player is ready
           if(!window.progressStarted){
             window.progressStarted=true
             requestAnimationFrame(updateProgress)
@@ -240,7 +268,18 @@ function pauseVideo(i){ if(players[i]) players[i].pauseVideo() }
 function startAll(){ players.forEach((p,i)=>{if(p) playVideo(i)}) }
 function pauseAll(){ players.forEach(p=>{if(p)p.pauseVideo()}) }
 
-// Chaos random seek only
+// Combined Play/Pause toggle button
+function togglePlayPause(i,btn){
+  if(!players[i]) return
+  let state = players[i].getPlayerState()
+  if(state === YT.PlayerState.PLAYING){
+    players[i].pauseVideo()
+  }else{
+    playVideo(i)
+  }
+}
+
+// Anachronism random seek
 function randomSeek(i){
   let p=players[i]
   if(!p) return
