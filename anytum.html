@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DESYNC MIXER</title>
+<title>YouTube Cue Mixer – Fully Working</title>
 <style>
 body{
   background:#121212;
@@ -34,11 +34,12 @@ input{
 }
 
 .player{
-  margin-bottom:10px;
+  margin-bottom:6px;
 }
 
 button{
   margin:3px;
+  cursor:pointer;
 }
 
 .cueRow{
@@ -84,11 +85,28 @@ button{
 .savedItem:hover{
   background:#333;
 }
+
+/* Timeline/progress bar */
+.progressContainer {
+  width: 320px;
+  height: 6px;
+  background: #333;
+  margin: 4px 0;
+  border-radius: 3px;
+}
+
+.progressBar {
+  height: 100%;
+  width: 0%;
+  background: #0f8;
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
 </style>
 </head>
 
 <body>
-<h2>Ana's YouTube Desync Mixer 🎛️</h2>
+<h2>YouTube Cue Mixer 🎛️</h2>
 
 <div id="inputs">
   <input id="url1" placeholder="Video 1 URL or ID">
@@ -112,6 +130,7 @@ let players=[]
 let delays=[]
 let cueTimes=[]
 const rateSteps = [0.5,0.75,1,1.25,1.5,1.75,2]
+window.progressStarted = false
 
 function getID(url){
   let m=url.match(/(?:v=|youtu.be\/)([^&]+)/)
@@ -134,7 +153,7 @@ function createChannel(i){
     <div class="sliderGroup">
       <div class="sliderBlock">
         <div class="sliderLabel" id="volLabel${i}">Volume: 80</div>
-        <input type="range" min="0" max="10" step="0.1" value="0" class="vslider" id="delay${i}" title="Start delay in seconds (applies when Start All is clicked)" oninput="updateDelay(${i},this.value)">
+        <input type="range" min="0" max="100" step="1" value="80" class="vslider" id="vol${i}" oninput="updateVolume(${i},this.value)">
       </div>
       <div class="sliderBlock">
         <div class="sliderLabel" id="rateLabel${i}">Rate: 1</div>
@@ -149,6 +168,7 @@ function createChannel(i){
 
   div.innerHTML=`
     <div id="player${i}" class="player"></div>
+    <div class="progressContainer"><div class="progressBar" id="progress${i}"></div></div>
     <div>
       <div class="cueRow">${cueRowRecall}</div>
       <div class="cueRow">${cueRowSet}</div>
@@ -156,8 +176,7 @@ function createChannel(i){
     <div>
       <button onclick="playVideo(${i})">▶</button>
       <button onclick="pauseVideo(${i})">⏸</button>
-<button title="Jump to a random point in the video" onclick="randomSeek(${i})">🎲 Chaos</button>
-
+      <button title="Jump to a random point in the video" onclick="randomSeek(${i})">🎲 Chaos</button>
     </div>
     ${sliderHTML}
   `
@@ -183,7 +202,16 @@ function loadVideos(){
       height:"200",
       width:"320",
       videoId:id,
-      playerVars:{playsinline:1,controls:1}
+      playerVars:{playsinline:1,controls:1},
+      events:{
+        onReady: function(event){
+          // start progress loop only once when the first player is ready
+          if(!window.progressStarted){
+            window.progressStarted=true
+            requestAnimationFrame(updateProgress)
+          }
+        }
+      }
     })
     delays[i]=0
   })
@@ -243,8 +271,8 @@ function renderSaved(){
     let el=document.createElement("div")
     el.className="savedItem"
     el.innerText=s.urls.join(" | ")
-el.title="Click to load this saved set"
-el.onclick=()=>{
+    el.title="Click to load this saved set"
+    el.onclick=()=>{
       url1.value=s.urls[0]||""
       url2.value=s.urls[1]||""
       url3.value=s.urls[2]||""
@@ -253,6 +281,19 @@ el.onclick=()=>{
     }
     div.appendChild(el)
   })
+}
+
+// Update progress bars
+function updateProgress(){
+  players.forEach((p,i)=>{
+    if(!p) return
+    let dur = p.getDuration()
+    if(!dur) return
+    let current = p.getCurrentTime()
+    let pct = (current/dur)*100
+    document.getElementById("progress"+i).style.width = pct + "%"
+  })
+  requestAnimationFrame(updateProgress)
 }
 
 renderSaved()
